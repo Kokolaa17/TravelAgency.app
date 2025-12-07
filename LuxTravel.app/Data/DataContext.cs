@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LuxTravel.app.Data;
 
-internal class DataContext : DbContext
+public class DataContext : DbContext
 {
     public DbSet<User> Users { get; set; }
     public DbSet<Agency> Agencies { get; set; }
@@ -12,6 +12,7 @@ internal class DataContext : DbContext
     public DbSet<Review> Reviews { get; set; }
     public DbSet<AgencyReview> AgencyReviews { get; set; }
     public DbSet<Wishlist> Wishlists { get; set; }
+    public DbSet<Admin> Admins { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

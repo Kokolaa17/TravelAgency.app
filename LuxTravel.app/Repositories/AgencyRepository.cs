@@ -8,22 +8,18 @@ namespace LuxTravel.app.Repositories;
 
 internal class AgencyRepository : IAgencyRepository
 {
-    DataContext dataContext = new DataContext();
-    public Tour registerTour(Tour newTour)
+    private readonly DataContext dataContext = new DataContext();
+
+    public Tour RegisterTour(Tour newTour)
     {
         dataContext.Add(newTour);
-        newTour.Status = Enums.Enums.TourStatus.Published;
         dataContext.SaveChanges();
-
         return newTour;
     }
 
     public Agency GetAgencyByOwnerId(int ownerId)
     {
-        return dataContext.Agencies
-            .Include(a=> a.Tours)
-            .Include(a=> a.Owner)
-            .FirstOrDefault(a => a.OwnerId == ownerId);
+        return dataContext.Agencies.FirstOrDefault(a => a.OwnerId == ownerId);
     }
 
     public List<Tour> GetAllTours()
@@ -31,47 +27,81 @@ internal class AgencyRepository : IAgencyRepository
         return dataContext.Tours.ToList();
     }
 
-    public User getUser(int userId)
+    public User GetAgencyOwnerById(int agencyId)
+    {
+        return dataContext.Users.FirstOrDefault(u => u.AgencyId == agencyId);
+    }
+
+    public User GetUserById(int userId)
     {
         return dataContext.Users
-        .Include(u => u.OwnedAgency)  
-        .FirstOrDefault(u => u.Id == userId);
+            .Include(u => u.OwnedAgency)
+            .FirstOrDefault(u => u.Id == userId);
     }
 
     public void UpdateAgency(Agency agency)
     {
-        dataContext.Agencies.Update(agency);
-    }
+        var agencyToUpdate = dataContext.Agencies
+            .Include(a => a.Owner)
+            .Include(a => a.Tours)
+            .Include(a => a.Reviews)
+            .FirstOrDefault(a => a.Id == agency.Id);
 
-    public void UpdateUser(User user)
-    {
-       dataContext.Users.Update(user);
-    }
-
-    public Tour removeTour(int tourId)
-    {
-        var tourToRemove = dataContext.Tours
-            .Include(t => t.Bookings)
-            .Include(t => t.Wishlists)
-            .Include(t => t.Agency)
-            .FirstOrDefault(t => t.Id == tourId);
-
-        dataContext.Wishlists.RemoveRange(dataContext.Wishlists.Where(w => w.TourId == tourId));
-        dataContext.Bookings.Where(b => b.TourId == tourId).ToList().ForEach(b => dataContext.Bookings.Remove(b));
-        dataContext.Tours.Remove(tourToRemove);
-
+        dataContext.Agencies.Update(agencyToUpdate);
         dataContext.SaveChanges();
+    }
+
+    public void UpdateAgencyTwo(Agency agency)
+    {
+        dataContext.Agencies.Update(agency); // ✅ Use the parameter
+        dataContext.SaveChanges();
+    }
+
+    public void UpdateUser(User logedInUser)
+    {
+        var userToUpdate = dataContext.Users
+            .Include(u => u.OwnedAgency)
+            .Include(Agency => Agency.OwnedAgency.Tours)
+            .Include(Agency => Agency.OwnedAgency.Reviews)
+            .Include(u => u.Bookings)
+            .Include(u => u.Wishlists)
+            .FirstOrDefault(user => user.Id == logedInUser.Id);
+
+        dataContext.Users.Update(userToUpdate);
+        dataContext.SaveChanges();
+    }
+
+    public void UpdateUserTwo(User logedInUser)
+    {
+        dataContext.Users.Update(logedInUser);
+        dataContext.SaveChanges();
+    }
+
+    public Tour RemoveTour(int tourId)
+    {
+        var tour = dataContext.Tours
+        .Include(t => t.Bookings)
+        .Include(t => t.Wishlists)
+        .FirstOrDefault(t => t.Id == tourId);
+
+        dataContext.Bookings.RemoveRange(tour.Bookings);
+        dataContext.Wishlists.RemoveRange(tour.Wishlists);
+        dataContext.Tours.Remove(tour);
+        dataContext.SaveChanges(); 
+
         return null;
     }
 
     public Agency DeleteAgency(Agency agency)
     {
         var tours = dataContext.Tours.Where(t => t.AgencyId == agency.Id).ToList();
-        dataContext.Tours.RemoveRange(tours);
-        dataContext.Agencies.Remove(agency);
         var reviews = dataContext.AgencyReviews.Where(r => r.AgencyId == agency.Id).ToList();
         dataContext.AgencyReviews.RemoveRange(reviews);
+        dataContext.Tours.RemoveRange(tours);
+        dataContext.Agencies.Remove(agency);
+
         dataContext.SaveChanges();
+
         return agency;
     }
 
@@ -80,18 +110,40 @@ internal class AgencyRepository : IAgencyRepository
         dataContext.SaveChanges();
     }
 
-    public Tour getTourById(int tourId)
+    public Tour GetTourById(int tourId)
     {
         return dataContext.Tours
-            .Include(t => t.Agency)    
-            .Include(t => t.Bookings) 
+            .Include(t => t.Agency)
+            .Include(t => t.Bookings)
             .FirstOrDefault(t => t.Id == tourId);
     }
 
     public List<AgencyReview> ViewAgencyReviews(Agency agency)
     {
-        return dataContext.AgencyReviews.Include(ar => ar.User)    
+        return dataContext.AgencyReviews
+            .Include(ar => ar.User)
             .Where(ar => ar.AgencyId == agency.Id)
             .ToList();
+    }
+
+    public Agency GetAgencyById(int agencyId)
+    {
+        return dataContext.Agencies
+            .Include(a => a.Owner)
+            .Include(a => a.Tours)
+            .Include(a => a.Reviews)
+            .FirstOrDefault(a => a.Id == agencyId);
+    }
+
+    public List<Tour> GetAgencyTours(int agencyId)
+    {
+        return dataContext.Tours
+            .Where(t => t.AgencyId == agencyId)
+            .ToList();
+    }
+
+    public Tour GetSelectedToir(int tourId)
+    {
+        return dataContext.Tours.FirstOrDefault(t => t.Id == tourId);
     }
 }

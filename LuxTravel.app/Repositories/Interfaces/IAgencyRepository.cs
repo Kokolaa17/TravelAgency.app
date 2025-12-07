@@ -4,15 +4,21 @@ namespace LuxTravel.app.Repositories.Interfaces;
 
 internal interface IAgencyRepository
 {
+    Tour RegisterTour(Tour newTour);
     Agency GetAgencyByOwnerId(int ownerId);
-    Tour registerTour(Tour newTour);
     List<Tour> GetAllTours();
-    User getUser(int userId);
-    Tour removeTour(int tourId);
+    User GetAgencyOwnerById(int agencyId);
+    User GetUserById(int userId);
     void UpdateAgency(Agency agency);
-    void UpdateUser(User user);
+    void UpdateAgencyTwo(Agency agency);
+    void UpdateUser(User logedInUser);
+    void UpdateUserTwo(User logedInUser);
+    Tour RemoveTour(int tourId);
     Agency DeleteAgency(Agency agency);
     void UpdateDatabase();
-    Tour getTourById(int tourId);
+    Tour GetTourById(int tourId);
     List<AgencyReview> ViewAgencyReviews(Agency agency);
+    Agency GetAgencyById(int agencyId);
+    List<Tour> GetAgencyTours(int agencyId);
+    Tour GetSelectedToir(int tourId);
 }

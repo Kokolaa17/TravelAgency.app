@@ -19,11 +19,12 @@ public class Tour : Base
     public int DurationDays => (EndDate - StartDate).Days + 1; 
     public int DurationNights => (EndDate - StartDate).Days;
     public int MaxParticipants { get; set; }
-    public int CurrentParticipants { get; set; } = 0;
+    public int CurrentParticipants { get; set; }
     public int AvailableSpots => MaxParticipants - CurrentParticipants;
-    public TourStatus Status { get; set; } = TourStatus.Draft;
+    public TourStatus Status { get; set; }
     public List<string> Includes { get; set; } = new List<string>();
     public int MinAge { get; set; }
+    public string? RejectReason { get; set; }
 
     // Agency relationship
     public int AgencyId { get; set; }

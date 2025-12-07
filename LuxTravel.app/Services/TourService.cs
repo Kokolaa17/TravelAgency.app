@@ -1,4 +1,6 @@
-﻿using LuxTravel.app.Migrations;
+﻿using LuxTravel.app.Data;
+using LuxTravel.app.Helpers;
+using LuxTravel.app.Migrations;
 using LuxTravel.app.Models;
 using LuxTravel.app.Repositories;
 using LuxTravel.app.Services.Interfaces;
@@ -8,6 +10,7 @@ namespace LuxTravel.app.Services;
 internal class TourService : ITourService
 {
     TourRepository TourRepository = new TourRepository();
+    Logging logger = new Logging();
 
     public void FilterByDestination()
     {
@@ -275,12 +278,12 @@ internal class TourService : ITourService
         Console.WriteLine($"{tour.Name} details:");
         Console.WriteLine("----------------------");
         Console.ResetColor();
-        Console.WriteLine($"Destination: {tour.Destination}");
-        Console.WriteLine($"Duration: {tour.DurationDays} days, {tour.DurationNights} nights");
-        Console.WriteLine($"Available Spots: {tour.AvailableSpots}");
-        Console.WriteLine($"Price: {tour.Price} {tour.Currency}");
-        Console.WriteLine($"Agency: {tour.Agency}");
-        Console.WriteLine($"Description: {tour.Description}");
+        Console.WriteLine($"📍 Destination: {tour.Destination}");
+        Console.WriteLine($"⏱️ Duration: {tour.DurationDays} days, {tour.DurationNights} nights");
+        Console.WriteLine($"🎟️ Available Spots: {tour.AvailableSpots}");
+        Console.WriteLine($"💰 Price: {tour.Price} {tour.Currency}");
+        Console.WriteLine($"🏢 Agency: {tour.Agency.Name}");
+        Console.WriteLine($"📝 Description: {tour.Description}");
     }
 
     public void SearchFilteredTours(User logedInUser)
@@ -376,6 +379,7 @@ internal class TourService : ITourService
 
         if (!int.TryParse(input, out int tourId))
         {
+            logger.LogMessage("Invalid tour ID input.", logedInUser);
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("⚠️ Invalid input. Please enter a valid ID.");
@@ -391,6 +395,7 @@ internal class TourService : ITourService
         }
         else if( tourId == 0)
         {
+            logger.LogMessage("User exited tour details view.", logedInUser);
             Console.Clear();
             return;
         }
@@ -401,6 +406,7 @@ internal class TourService : ITourService
             {
                 Console.Clear();
 
+                logger.LogMessage($"User viewed details for tour ID {tourId}.", logedInUser);
                 Console.ForegroundColor = ConsoleColor.DarkBlue;
                 Console.WriteLine($"🌍 {tour.Name}");
                 Console.WriteLine("----------------------");
@@ -409,7 +415,6 @@ internal class TourService : ITourService
                 Console.WriteLine($"📌 Starting point: {tour.StartingPoint}");
                 Console.WriteLine($"📍 Destination: {tour.Destination}");
                 Console.WriteLine($"📆 Duration: {tour.DurationDays} days, {tour.DurationNights} nights");
-                Console.WriteLine($"👥 Available Spots: {tour.AvailableSpots}");
                 Console.WriteLine("➕ Includes:");
                 foreach (var include in tour.Includes)
                 {
@@ -434,12 +439,14 @@ internal class TourService : ITourService
 
                 if (detailsInput == "0")
                 {
+                    logger.LogMessage("User exited tour details view.", logedInUser);
                     Console.Clear();
                     return;
                 }
                 else if (detailsInput == "1")
                 {
                     // for booking
+                    logger.LogMessage("User selected to book a tour.", logedInUser);
                     AgencyRepository agencyRepository = new AgencyRepository();
                     BookingService bookingService = new BookingService();
                     var agency = agencyRepository.GetAgencyByOwnerId(logedInUser.Id);
@@ -448,8 +455,9 @@ internal class TourService : ITourService
                 }
                 else if (detailsInput == "2")
                 {
+                    logger.LogMessage("User selected to add tour to wish list.", logedInUser);
                     WishListService wishListService = new WishListService();
-                    wishListService.AddToWishList(logedInUser.Id, tour.Id);
+                    wishListService.AddToWishList(logedInUser.Id, tour.Id, logedInUser);
                 }
                 else
                 {
@@ -457,6 +465,8 @@ internal class TourService : ITourService
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("⚠️ Invalid input. Please enter a valid ID.");
                     Console.ResetColor();
+
+                    logger.LogMessage(detailsInput + " is an invalid input in tour details view.", logedInUser);
 
                     Console.WriteLine();
                     Console.ForegroundColor = ConsoleColor.DarkYellow;

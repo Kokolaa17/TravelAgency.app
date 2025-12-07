@@ -13,8 +13,21 @@ internal class BookingRepository : IBookingRepository
     {
         dataContext.Bookings.Add(newBooking);
         dataContext.SaveChanges();
-
         return newBooking;
+    }
+
+    public Agency GetAgencyByTourId(int tourId)
+    {
+        return dataContext.Tours
+            .Include(t => t.Agency)
+            .Where(t => t.Id == tourId)
+            .Select(t => t.Agency)
+            .FirstOrDefault();
+    }
+
+    public User GetUserById(int userId)
+    {
+        return dataContext.Users.FirstOrDefault(u => u.Id == userId);
     }
 
     public List<User> GetBookingsByTourId(int tourId)
@@ -42,8 +55,78 @@ internal class BookingRepository : IBookingRepository
         return booking;
     }
 
+    public void UpdateUser(User logedInUser)
+    {
+        var userToUpdate = dataContext.Users
+           .Include(u => u.OwnedAgency)
+           .Include(Agency => Agency.OwnedAgency.Tours)
+           .Include(Agency => Agency.OwnedAgency.Reviews)
+           .Include(u => u.Bookings)
+           .Include(u => u.Wishlists)
+           .FirstOrDefault(user => user.Id == logedInUser.Id);
+
+        dataContext.Users.Update(userToUpdate);
+        dataContext.SaveChanges();
+    }
+
+    public void UpdateUserTwo(User LogedInUser)
+    {
+        dataContext.Users.Update(LogedInUser);
+        dataContext.SaveChanges();
+    }
+
     public List<Booking> UserBookings(User logedInUser)
     {
         return dataContext.Bookings.Where(b => b.UserId == logedInUser.Id).ToList();
+    }
+    public Tour GetTourById(int id)
+    {
+        return dataContext.Tours.FirstOrDefault(tour => tour.Id == id);
+    }
+
+    public void SaveChanges()
+    {
+        dataContext.SaveChanges();
+    }
+
+    public Tour FindTourById(int tourID)
+    {
+        return dataContext.Tours.FirstOrDefault(t => t.Id ==  tourID);
+    }
+    public void UpdateTour(Tour tour)
+    {
+        dataContext.Tours.Update(tour);
+        dataContext.SaveChanges();
+    }
+
+    public void Save()
+    {
+        dataContext.SaveChanges();
+    }
+
+
+    public void UpdateAgency(Agency agency)
+    {
+        var agencyToUpdate = dataContext.Agencies
+            .Include(a => a.Owner)
+            .Include(a => a.Tours)
+            .Include(a => a.Reviews)
+            .FirstOrDefault(a => a.Id == agency.Id);
+
+        dataContext.Agencies.Update(agencyToUpdate);
+        dataContext.SaveChanges();
+    }
+
+    public void UpdateAgencyTwo(Agency agency)
+    {
+        dataContext.Agencies.Update(agency);
+        dataContext.SaveChanges();
+    }
+
+    public Tour GetTourWithAgency(int tourId)
+    {
+        return dataContext.Tours
+            .Include(t => t.Agency)             
+            .FirstOrDefault(t => t.Id == tourId);
     }
 }

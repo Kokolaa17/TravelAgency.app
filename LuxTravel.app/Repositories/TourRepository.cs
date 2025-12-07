@@ -11,34 +11,36 @@ internal class TourRepository : ITourRepository
 
     public List<Tour> FilterByDestination(string destination)
     {
-        return DataContext.Tours.Where(tour => tour.Destination.ToLower() == destination.ToLower()).ToList();
+        return DataContext.Tours.Where(tour => tour.Destination.ToLower() == destination.ToLower() && tour.Status == Enums.Enums.TourStatus.Published).ToList();
     }
 
     public List<Tour> FilterByMinAge (int minAge)
     {
-        return DataContext.Tours.Where(tour => tour.MinAge <= minAge).ToList();
+        return DataContext.Tours.Where(tour => tour.MinAge <= minAge && tour.Status == Enums.Enums.TourStatus.Published).ToList();
     }
 
     public List<Tour> FilterByDuration(int minDays, int maxDays)
     {
         return DataContext.Tours.AsEnumerable()
-               .Where(tour => tour.DurationDays >= minDays && tour.DurationDays <= maxDays)
+               .Where(tour => tour.DurationDays >= minDays && tour.DurationDays <= maxDays && tour.Status == Enums.Enums.TourStatus.Published)
                .ToList();
     }
 
     public List<Tour> FilterByPrice(decimal minPrice, decimal maxPrice)
     {
-        return DataContext.Tours.Where(tour => tour.Price >= minPrice && tour.Price <= maxPrice).ToList();
+        return DataContext.Tours.Where(tour => tour.Price >= minPrice && tour.Price <= maxPrice && tour.Status == Enums.Enums.TourStatus.Published).ToList();
     }
 
     public Tour GetTourById(int id)
     {
-        return DataContext.Tours.FirstOrDefault(tour => tour.Id == id);
+        return DataContext.Tours.FirstOrDefault(tour => tour.Id == id && tour.Status == Enums.Enums.TourStatus.Published);
     }
 
     public List<Tour> SeeAllTour()
     {
-        return DataContext.Tours.ToList();
+        return DataContext.Tours
+            .Where(t => t.Status == Enums.Enums.TourStatus.Published)
+            .ToList();
     }
 
     public void CreateBooking(int userId, int tourId, int numberOfPeople)

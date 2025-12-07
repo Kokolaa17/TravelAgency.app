@@ -1,4 +1,5 @@
-﻿using LuxTravel.app.Models;
+﻿using LuxTravel.app.Helpers;
+using LuxTravel.app.Models;
 using LuxTravel.app.Repositories;
 using LuxTravel.app.Services.Interfaces;
 
@@ -8,7 +9,8 @@ public class WishListService : IWishListService
 {
     WishListRepository WishListRepository = new WishListRepository();
     TourRepository TourRepository = new TourRepository();
-    public void AddToWishList(int userId, int tourId)
+    Logging loger = new Logging();
+    public void AddToWishList(int userId, int tourId, User logedInUser)
     {
         Wishlist wishlist = new Wishlist()
         {
@@ -22,6 +24,9 @@ public class WishListService : IWishListService
             Console.WriteLine("\n❌ This tour is already in your wishlist!\n");
             Console.ResetColor();
             Console.WriteLine();
+
+            loger.LogMessage($"Tour already in wishlist", logedInUser);
+
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.Write("Press any key to continue...");
             Console.ResetColor();
@@ -36,6 +41,8 @@ public class WishListService : IWishListService
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"\n✅ '{tour.Name}' has been added to your wishlist!\n");
             Console.ResetColor();
+
+            loger.LogMessage($"Tour {tour.Name} added to wishlist", logedInUser);
 
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.DarkYellow;
@@ -160,7 +167,7 @@ public class WishListService : IWishListService
                     else if (option == "1")
                     {
                         // for booking
-                        AgencyRepository agencyRepository = new AgencyRepository();
+                        AgencyRepository agencyRepository = new();
                         BookingService bookingService = new BookingService();
                         var agency = agencyRepository.GetAgencyByOwnerId(logedInUser.Id);
 
@@ -173,6 +180,9 @@ public class WishListService : IWishListService
                         Console.WriteLine($"\n✅ '{tourDetails.Name}' has been removed from your wishlist!\n");
                         Console.ResetColor();
                         Console.WriteLine();
+
+                        loger.LogMessage($"Tour {tourDetails.Name} removed from wishlist", logedInUser);
+
                         Console.ForegroundColor = ConsoleColor.DarkYellow;
                         Console.Write("Press any key to continue...");
                         Console.ResetColor();
@@ -184,6 +194,8 @@ public class WishListService : IWishListService
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("Invalid option. Please try again.");
                         Console.ResetColor();
+
+                        loger.LogMessage($"Invalid option selected in wishlist", logedInUser);
 
                         Console.WriteLine();
                         Console.ForegroundColor = ConsoleColor.DarkYellow;
@@ -198,6 +210,8 @@ public class WishListService : IWishListService
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Invalid tour ID. Please try again.");
                     Console.ResetColor();
+
+                    loger.LogMessage($"Invalid tour ID entered in wishlist", logedInUser);
 
                     Console.WriteLine();
                     Console.ForegroundColor = ConsoleColor.DarkYellow;

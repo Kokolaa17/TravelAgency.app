@@ -4,11 +4,11 @@ namespace LuxTravel.app.Services.Interfaces;
 
 internal interface ITourService
 {
-    void SeeAllTour(User logedInUser);
-    void FilterByPrice();
     void FilterByDestination();
     void FilterByDuration();
+    void FilterByPrice();
     void FilterByMinAge();
     void GetTourById(int tourId);
-    void SearchFilteredTours(User logedInUser);
+    void SearchFilteredTours(User loggedInUser);
+    void SeeAllTour(User loggedInUser);
 }

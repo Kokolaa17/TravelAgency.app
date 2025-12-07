@@ -1,4 +1,5 @@
 ﻿using LuxTravel.app.Data;
+using LuxTravel.app.Helpers;
 using LuxTravel.app.Migrations;
 using LuxTravel.app.Models;
 using LuxTravel.app.Repositories;
@@ -9,6 +10,7 @@ namespace LuxTravel.app.Services;
 
 public class BookingService : IBookingService
 {
+    Logging logger = new Logging();
 
     public void BookTour(Tour tour, User logedInUser, Agency agency)
     {
@@ -17,6 +19,7 @@ public class BookingService : IBookingService
         BookingRepository bookingRepository = new BookingRepository();
         if (bookingRepository.HasExistingBooking(logedInUser.Id, tour.Id))
         {
+            logger.LogMessage("User attempted to book a tour they have already booked.", logedInUser);
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("❌ You have already booked this tour!");
             Console.ResetColor();
@@ -43,6 +46,7 @@ public class BookingService : IBookingService
             var input = Console.ReadLine();
             if (!int.TryParse(input, out int participants) || participants <= 0)
             {
+                logger.LogMessage("User entered an invalid number of participants for booking.", logedInUser);
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("❌ Invalid number of participants.");
                 Console.ResetColor();
@@ -64,71 +68,95 @@ public class BookingService : IBookingService
 
                 if (choice == '1')
                 {
-                    if (participants <= tour.AvailableSpots && logedInUser.Balance >= tour.Price)
-                    {
-                        // for updates
-                        AgencyRepository agencyRepository = new AgencyRepository();
+                    var totalAmount = participants * tour.Price;
+                    var availableSpots = tour.MaxParticipants - tour.CurrentParticipants;
 
-                        tour.CurrentParticipants += participants;
-                        
-
-                        logedInUser.Balance -= tour.Price;
-                        agency.TotalEarnings += tour.Price;
-                        agency.TotalBookings += participants;
-                        agency.Balance += tour.Price;
-
-                        agencyRepository.UpdateUser(logedInUser);
-                        agencyRepository.UpdateDatabase();
-
-
-                        Booking newBooking = new Booking
-                        {
-                            TourId = tour.Id,
-                            UserId = logedInUser.Id,
-                            NumberOfPeople = participants,
-                            BookingDate = DateTime.Now
-                        };
-
-
-                        // Save booking to database
-                        bookingRepository.BookTour(newBooking);
-
-                        Console.WriteLine();
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine("✅ Booking successful!");
-                        Console.WriteLine("");
-                        Console.ResetColor();
-
-                        Console.WriteLine();
-                        Console.ForegroundColor = ConsoleColor.DarkYellow;
-                        Console.WriteLine("Press any key to return to the tours list...");
-                        Console.ResetColor();
-                        Console.ReadKey();
-                        Console.Clear();
-                        return;
-                    }
-                    else
+                    if (logedInUser.Balance < totalAmount)
                     {
                         Console.WriteLine();
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("");
-                        Console.WriteLine("Insufficient available spots or funds.");
-                        Console.WriteLine("❌ Booking failed!");
+                        Console.WriteLine("❌ Insufficient funds!");
                         Console.ResetColor();
-
+                        logger.LogMessage("Booking failed due to insufficient user funds.", logedInUser);
                         Console.WriteLine();
                         Console.ForegroundColor = ConsoleColor.DarkYellow;
                         Console.WriteLine("Press any key to continue...");
                         Console.ResetColor();
                         Console.ReadKey();
                         Console.Clear();
+                        return;
                     }
+
+                    if (availableSpots < participants)
+                    {
+                        Console.WriteLine();
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"❌ Only {availableSpots} spots available!");
+                        Console.ResetColor();
+                        logger.LogMessage($"Booking failed due to insufficient spots. Requested: {participants}, Available: {availableSpots}", logedInUser);
+                        Console.WriteLine();
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        Console.WriteLine("Press any key to continue...");
+                        Console.ResetColor();
+                        Console.ReadKey();
+                        Console.Clear();
+                        return;
+                    }
+
+                    Booking newBooking = new Booking
+                    {
+                        TourId = tour.Id,
+                        UserId = logedInUser.Id,
+                        NumberOfPeople = participants,
+                        BookingDate = DateTime.Now,
+                        TotalPrice = totalAmount 
+                    };
+
+                    var twoInfo = bookingRepository.GetTourWithAgency(tour.Id);
+                    var Trackeduser = bookingRepository.GetUserById(logedInUser.Id);
+                    // apply changes
+                    Trackeduser.Balance -= totalAmount;
+                    twoInfo.Agency.TotalEarnings += totalAmount;
+                    logedInUser.Balance = Trackeduser.Balance;
+                    twoInfo.Agency.TotalBookings += participants;
+                    twoInfo.Agency.Balance += totalAmount;
+                    twoInfo.CurrentParticipants += participants;
+
+                    // save changes for user + tour + agency
+                    bookingRepository.UpdateUserTwo(Trackeduser);
+                    bookingRepository.Save();
+
+                    // save booking separately
+                    bookingRepository.BookTour(newBooking);
+
+                    Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("✅ Booking successful!");
+                    Console.WriteLine("");
+                    Console.ResetColor();
+                    logger.LogMessage($"User successfully booked tour: {tour.Name} for {participants} participants.", logedInUser);
+                    
+
+                    Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                    Console.WriteLine("Press any key to return to the tours list...");
+                    Console.ResetColor();
+                    Console.ReadKey();
+                    Console.Clear();
+                    return;
                 }
                 else
                 {
+                    logger.LogMessage("User cancelled the booking process.", logedInUser);
+                    Console.WriteLine();
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("Booking cancelled.");
+                    Console.WriteLine("❌ Booking cancelled.");
                     Console.ResetColor();
+                    Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                    Console.WriteLine("Press any key to continue...");
+                    Console.ResetColor();
+                    Console.ReadKey();
                     Console.Clear();
                 }
             }
@@ -152,6 +180,8 @@ public class BookingService : IBookingService
             Console.WriteLine("No bookings found.");
             Console.ResetColor();
 
+            logger.LogMessage("User has no bookings", logedInUser);
+
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.DarkYellow;
             Console.WriteLine("Press any key to return to the previous menu...");
@@ -162,9 +192,11 @@ public class BookingService : IBookingService
         }
         else
         {
+            logger.LogMessage($"User has {bookings.Count} bookings.", logedInUser);
+
             foreach (var booking in bookings)
             {
-                var tour = new TourRepository().GetTourById(booking.TourId);
+                var tour = bookingRepository.GetTourById(booking.TourId);
                 Console.WriteLine($"[{booking.Id}] 🔖 {tour.Name} | {tour.StartingPoint} - {tour.Destination} | Participants: {booking.NumberOfPeople} | Date: {booking.BookingDate}");
             }
 
@@ -183,13 +215,18 @@ public class BookingService : IBookingService
 
                 if (bookingToRemove != null)
                 {
-                    TourRepository tourRepository = new TourRepository();
-                    var tour = tourRepository.GetTourById(bookingToRemove.TourId);
+                    var tour = bookingRepository.GetTourById(bookingToRemove.TourId);
                     var refundedAmount = bookingToRemove.NumberOfPeople * tour.Price;
 
                     logedInUser.Balance += refundedAmount;
-                    tour.CurrentParticipants -= bookingToRemove.NumberOfPeople; 
+                    var tourAgency = bookingRepository.GetAgencyByTourId(bookingToRemove.TourId);
+                    tour.CurrentParticipants -= bookingToRemove.NumberOfPeople;
+                    tourAgency.TotalBookings -= bookingToRemove.NumberOfPeople;
+                    tourAgency.TotalEarnings -= bookingToRemove.TotalPrice;
+                    tourAgency.Balance -= refundedAmount;
 
+
+                    bookingRepository.UpdateUser(logedInUser);
                     bookingRepository.RemoveBooking(bookingToRemove);
 
 
@@ -200,10 +237,7 @@ public class BookingService : IBookingService
                     Console.WriteLine($"💵 {refundedAmount} is recived back to your account!");
                     Console.ResetColor();
 
-                    AgencyRepository agencyRepository = new AgencyRepository();
-                    agencyRepository.UpdateUser(logedInUser);
-                    agencyRepository.UpdateDatabase();
-
+                    logger.LogMessage(user: logedInUser, message: $"Booking ID {bookingId} removed. Refunded Amount: {refundedAmount}.");
 
                     Console.WriteLine();
                     Console.ForegroundColor = ConsoleColor.DarkYellow;
@@ -220,6 +254,8 @@ public class BookingService : IBookingService
                     Console.WriteLine("❌ Booking ID not found.");
                     Console.ResetColor();
 
+                    logger.LogMessage($"User entered invalid booking ID {bookingId} for removal.", user: logedInUser);
+
                     Console.WriteLine();
                     Console.ForegroundColor = ConsoleColor.DarkYellow;
                     Console.WriteLine("Press any key to continue...");
@@ -231,6 +267,7 @@ public class BookingService : IBookingService
             }
             else
             {
+                logger.LogMessage("User exited the bookings menu without making changes.", user: logedInUser);
                 Console.Clear();
                 return;
             }

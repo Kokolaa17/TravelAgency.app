@@ -6,10 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LuxTravel.app.Repositories;
 
-internal class UserRepository : IUserRepository
+public class UserRepository : IUserRepository
 {
     public DataContext dataContext = new DataContext();
-
     public User UserLogIn(string emailOrPassword, string password)
     {
         var user = dataContext.Users.FirstOrDefault(u => u.Email == emailOrPassword || u.UserName == emailOrPassword);
@@ -18,6 +17,16 @@ internal class UserRepository : IUserRepository
             return user;
         }
         return null; 
+    }
+
+    public Admin AdminLogIn(string emailOrPassword, string password)
+    {
+        var admin = dataContext.Admins.FirstOrDefault(u => u.Email == emailOrPassword || u.UserName == emailOrPassword);
+        if (admin != null && BCrypt.Net.BCrypt.Verify(password, admin.Password))
+        {
+            return admin;
+        }
+        return null;
     }
 
     public User UserRegistration(User newUser)
@@ -90,7 +99,7 @@ internal class UserRepository : IUserRepository
     }
     public Agency RegisterAgency(Agency newAgency)
     {
-        dataContext.Add(newAgency);
+        dataContext.Agencies.Add(newAgency);
         dataContext.SaveChanges();
 
         return newAgency;
@@ -114,5 +123,50 @@ internal class UserRepository : IUserRepository
     public AgencyReview GetAllAgencyRevies(User user, Agency agency)
     {
         return dataContext.AgencyReviews.FirstOrDefault(ar => ar.UserId == user.Id && ar.AgencyId == agency.Id);
+    }
+
+    public User getUserByEmail(string email)
+    {
+        return dataContext.Users.FirstOrDefault(u => u.Email == email);
+    }
+
+    public void updateUserPassword(User user)
+    {
+        dataContext.Users.Update(user);
+        dataContext.SaveChanges();
+    }
+
+    public void UpdateUser(User logedInUser)
+    {
+        var userToUpdate = dataContext.Users
+            .Include(u => u.OwnedAgency)
+            .Include(Agency => Agency.OwnedAgency.Tours)
+            .Include(Agency => Agency.OwnedAgency.Reviews)
+            .Include(u => u.Bookings)
+            .Include(u => u.Wishlists)
+            .FirstOrDefault(user => user.Id == logedInUser.Id);
+
+        dataContext.Users.Update(userToUpdate);
+        dataContext.SaveChanges();
+    }
+
+    public void UpdateAgency(Agency agency)
+    {
+        var agencyToUpdate = dataContext.Agencies
+            .Include(a => a.Owner)
+            .Include(a => a.Tours)
+            .Include(a => a.Reviews)
+            .FirstOrDefault(a => a.Id == agency.Id);
+
+        dataContext.Agencies.Update(agencyToUpdate);
+        dataContext.SaveChanges();
+    }
+
+    public Agency DeleteAgency(Agency agency, User logedInUser)
+    {
+        dataContext.Users.Update(logedInUser);
+        dataContext.Agencies.Remove(agency);
+        dataContext.SaveChanges();
+        return agency;
     }
 }

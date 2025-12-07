@@ -11,11 +11,12 @@ public class Agency : Base
     public string Address { get; set; }
     public string City { get; set; }
     public string Country { get; set; }
-    public AgencyStatus Status { get; set; } = AgencyStatus.Pending;
+    public AgencyStatus Status { get; set; }
     public int TotalToursCreated { get; set; }
     public int TotalBookings { get; set; }
     public decimal Balance { get; set; }
     public decimal TotalEarnings { get; set; }
+    public string? RejectReason { get; set; } 
 
     // Owner relationship
     public int OwnerId { get; set; }

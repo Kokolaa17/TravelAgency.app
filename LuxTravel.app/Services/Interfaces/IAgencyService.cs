@@ -1,13 +1,16 @@
 ﻿using LuxTravel.app.Models;
+using System.Collections.Generic;
 
-namespace LuxTravel.app.Services.Interfaces;
-
-internal interface IAgencyService
+namespace LuxTravel.app.Services.Interfaces
 {
-    void RegisterNewTour(Agency agency);
-    void ManageTours(Agency agency);
-    void CustomerReviews(Agency agency);
-    void ViewFinancalOverview(Agency agency);
-    void ViewPerformacneStatistics(Agency agency);
-    void ViewAgnecyDetails(Agency agency);
+    public interface IAgencyService
+    {
+        void CustomerReviews(Agency agency, User logedInUser);
+        void ManageTours(Agency agency, User logedInUser);
+        void RegisterNewTour(Agency agency, User logedInUser);
+        void ViewAgnecyDetails(Agency agency, User logedInUser);
+        void ViewFinancalOverview(Agency agency, User logedInUser);
+        void ViewPerformacneStatistics(Agency agency, User logedInUser);
+        void GenerateAgencyInvoicePdf(Agency agency, User loggedInUser);
+    }
 }
